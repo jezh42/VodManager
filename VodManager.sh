@@ -75,8 +75,9 @@ do
   ffmpeg -y \
   -i ${vods_location}${id}.mp4 \
   -i ${vods_location}${id}_chat.mp4 \
-  [1:v]format=rgb24,colorkey=black:0.3:0.2,colorchannelmixer=aa=0.3[1t]; \
-  [0:v][1t]overlay=W-w:0[outv]; \
+  -filter_complex \
+  "[1:v]format=rgb24,colorkey=black:0.3:0.2,colorchannelmixer=aa=0.3[1t]; \
+  [0:v][1t]overlay=W-w:0[outv]" \
   -map [outv] -map 0:a \
   -c:a copy \
   -c:v libx264 \
