@@ -13,6 +13,8 @@
 vods_location='/mnt/NAS_Drive/VODs/AlsoMij/'
 temp_location="${vods_location}temp/"
 log_level="Status,Info,Warning,Error,Verbose"
+chat_height=176
+chat_width=400
 
 # List of users
 # https://dev.twitch.tv/docs/api/reference/#get-users
@@ -42,6 +44,7 @@ do
   set -x
 
   # TwitchDownloadCLI vod
+  # TODO: Change the ffmpeg options to be less filesize
   TwitchDownloaderCLI videodownload \
     --id ${id} \
     --log-level ${log_level} \
@@ -56,10 +59,11 @@ do
     -o ${vods_location}${id}_chat.json
      
   # TwitchDownloadCLI render-chat
+  # Change size
   TwitchDownloaderCLI chatrender \
     -i ${vods_location}${id}_chat.json \
-    -h 1080 \
-    -w 422 \
+    -h ${chat_height} \
+    -w ${chat_width} \
     --framerate 30 \
     --update-rate 0 \
     --font-size 18 \
@@ -67,6 +71,18 @@ do
     -o ${vods_location}${id}_chat.mp4
   
   # ffmpeg combine chat ontop of vod -> new vid
+  # https://stackoverflow.com/questions/52547971/overlay-transparency-video-on-top-of-other-video
+  ffmpeg -y \
+  -i ${vods_location}${id}.mp4 \
+  -i ${vods_location}${id}_chat.mp4 \
+  [1:v]format=rgb24,colorkey=black:0.3:0.2,colorchannelmixer=aa=0.3[1t]; \
+  [0:v][1t]overlay=W-w:0[outv]; \
+  -map [outv] -map 0:a \
+  -c:a copy \
+  -c:v libx264 \
+  -preset ultrafast \
+  ${vods_location}${id}_combined.mp4
+  
   set +x
 done
 
