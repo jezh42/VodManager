@@ -15,7 +15,6 @@
 #  Renders Chat
 #  Combines Chat onto video
 #   Old Vod is still kept
-#  Gets Chapters
 #  Uploads to Youtube?
 #
 # Future Features:
@@ -23,6 +22,7 @@
 #  Command Line count vods
 #  Supporting multiple streamers
 #  Command line supply streamers
+#  Chapter support?
 #
 # Configure the twitch CLI tool?
 
@@ -90,6 +90,9 @@ do
      
   # Render chat
   # Change size
+  # --background-color "#88111111" \
+  # "#00000000"
+  #  "alternate": "#222222" "regular": "#66191919"
   TwitchDownloaderCLI chatrender \
     -i ${vods_location}${id}_chat.json \
     -h ${chat_height} \
@@ -97,34 +100,45 @@ do
     --framerate 30 \
     --update-rate 0 \
     --font-size 18 \
-    --background-color "#CC111111" \
+    --background-color "#00000000" \
     --temp-path ${temp_location} \
-    --collision Exit \
+    --collision Overwrite \
+    --generate-mask \
     -o ${vods_location}${id}_chat.mp4
   
   # ffmpeg combine chat ontop of vod -> new vid
   # https://stackoverflow.com/questions/52547971/overlay-transparency-video-on-top-of-other-video
+  # https://github.com/lay295/TwitchDownloader/issues/79
+  # https://stackoverflow.com/questions/23201134/transparent-argb-hex-value
 
-  #"[1:v]format=rgba,colorchannelmixer=aa=0.5[1t]; \
+  #"[1:v]format=rgb24,colorkey=black:0.3:0.2,colorchannelmixer=aa=0.3[1t]; \
   #[0:v][1t]overlay=W-w:0[outv]" \
   # -crf 23 \
   # -maxrate 5M -bufsize 10M \
 
+  # ffmpeg -y \
+  #  -i ${vods_location}${id}.mp4 \
+  #  -i ${vods_location}${id}_chat.mp4 \
+  #  -filter_complex \
+  #  '[1:v]format=rgba,colorchannelmixer=aa=0.5[1t]; [0:v][1t]overlay=W-w:0[outv]' \
+  #  -map [outv] -map 0:a \
+  #  -c:a copy \
+  #  -c:v libx264 \
+  #  -preset slow \
+  #  ${vods_location}${id}_combined.mp4
+
   ffmpeg -y \
-   -i ${vods_location}${id}.mp4 \
    -i ${vods_location}${id}_chat.mp4 \
-   -filter_complex \
-   "[1:v]format=rgb24,colorkey=black:0.3:0.2,colorchannelmixer=aa=0.3[1t]; \
-   [0:v][1t]overlay=W-w:0[outv]" \
-   -map [outv] -map 0:a \
+   -i ${vods_location}${id}_chat_mask.mp4 \
+   -i ${vods_location}${id}.mp4 \
+   -filter_complex "[0][1]alphamerge[ia];[2][ia]overlay=W-w:0" \
    -c:a copy \
    -c:v libx264 \
    -preset slow \
+   -crf 26 \
    ${vods_location}${id}_combined.mp4
   
   set +x
 
   echo "Finished processing video ${id}"
 done
-
-# get chapters
