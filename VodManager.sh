@@ -35,6 +35,11 @@ chat_height=176
 chat_width=400
 vodCount=5
 
+ORANGE='\033[0;33m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
 # List of users
 # https://dev.twitch.tv/docs/api/reference/#get-users
 # twitch api get /users -q login=AlsoMij
@@ -59,9 +64,9 @@ do
 
 
   if [ -f "${vods_location}${id}.mp4" ]; then
-    echo "[VodManager] [1] Vod ${id} already downloaded, skipping."
+    echo -e "${ORANGE}[VodManager]${NC} ${RED}[1]${NC} Vod ${id} already downloaded, skipping."
   else
-    echo "[VodManager] [1] Downloading AlsoMij vod, id: ${id}..."
+    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[1]${NC} Downloading AlsoMij vod, id: ${id}..."
     
     # TODO: Change the ffmpeg options to be less filesize?
     TwitchDownloaderCLI videodownload \
@@ -81,9 +86,9 @@ do
 
  
   if [ -f "${vods_location}${id}_chat.json" ]; then
-    echo "[VodManager] [2] Chat ${id} already downloaded, skipping."
+    echo -e "${ORANGE}[VodManager]${NC} ${RED}[2]${NC} Chat ${id} already downloaded, skipping."
   else
-    echo "[VodManager] [2] Downloading AlsoMij chat, id: ${id}..."
+    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[2]${NC} Downloading AlsoMij chat, id: ${id}..."
     
     TwitchDownloaderCLI chatdownload -E \
       --id ${id} \
@@ -95,9 +100,9 @@ do
 
   
   if [ -f "${vods_location}${id}_chat.mp4" ]; then
-    echo "[VodManager] [3] Chat ${id} already rendered, skipping."
+    echo -e "${ORANGE}[VodManager]${NC} ${RED}[3]${NC} Chat ${id} already rendered, skipping."
   else
-    echo "[VodManager] [3] Rendering AlsoMij chat, id: ${id}..."
+    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[3]${NC} Rendering AlsoMij chat, id: ${id}..."
     # Render chat
     # Change size
     # --background-color "#88111111" \
@@ -141,26 +146,27 @@ do
 
   # Continue if video is already downloaded
   if [ -f "${vods_location}${id}_combined.mp4" ]; then
-    echo "[VodManager] [4] Combined Video ${id} already rendered, skipping."
+    echo -e "${ORANGE}[VodManager]${NC} ${RED}[4]${NC} Combined Video ${id} already rendered, skipping."
   else
-    echo "[VodManager] [4] Rendering chat overlay for AlsoMij vod, id: ${id}..."
+    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[4]${NC} Rendering chat overlay for AlsoMij vod, id: ${id}..."
 
-    ffmpeg -y \
+	# -preset slow
+    ffmpeg \
      -i ${vods_location}${id}_chat.mp4 \
      -i ${vods_location}${id}_chat_mask.mp4 \
      -i ${vods_location}${id}.mp4 \
      -filter_complex "[0][1]alphamerge[ia];[2][ia]overlay=W-w:0" \
      -c:a copy \
      -c:v libx264 \
-     -preset slow \
+     -preset medium \
      -crf 26 \
      ${vods_location}${id}_combined.mp4
   fi
 
 
-  #echo "[VodManager] [5] Uploading final AlsoMij vod, id: ${id}..."
+  #echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[5]${NC} Uploading final AlsoMij vod, id: ${id}..."
 
-  echo "[VodManager] [6] Finished processing video ${id}"
+  echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} Finished processing video ${id}"
 
 
   #set +x
