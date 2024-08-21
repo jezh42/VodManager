@@ -5,9 +5,6 @@
 #
 # Make sure to configure the global vars
 #
-# !NOTE!: Combined VOD/chat render is commented out atm
-#
-#  Run daily via cron?
 #
 # Goal:
 #  Downloads VODs
@@ -15,7 +12,7 @@
 #  Renders Chat
 #  Combines Chat onto video
 #   Old Vod is still kept
-#  Uploads to Youtube?
+#  Uploads to Youtube
 #
 # Future Features:
 #  Better logging
@@ -23,8 +20,7 @@
 #  Supporting multiple streamers
 #  Command line supply streamers
 #  Chapter support?
-#
-# Configure the twitch CLI tool?
+
 
 # Global Vars
 vods_location='/mnt/NAS_Drive/VODs/AlsoMij/'
@@ -33,17 +29,15 @@ temp_location="${vods_location}temp/"
 log_level="Status,Info,Warning,Error"
 chat_height=176
 chat_width=400
-vodCount=5
+vodCount=30
 
 ORANGE='\033[0;33m'
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
-# List of users
-# https://dev.twitch.tv/docs/api/reference/#get-users
-# twitch api get /users -q login=AlsoMij
-# access them ${channels['AlsoMij']}
+# List of users https://dev.twitch.tv/docs/api/reference/#get-users
+# $ twitch api get /users -q login=AlsoMij
 declare -A channels=(["AlsoMij"]="209005581")
 
 # Get latest x vod Ids (Twitch API)
@@ -56,12 +50,11 @@ vod_data=$(twitch api get /videos \
 )
 
 
-# Loop through all x video ids
+# Loop through all x videos getting id, title and created_at
 for id in $(echo ${vod_data} | jq -r '.data[].id') 
 do
 
   #set -x
-
 
   if [ -f "${vods_location}${id}.mp4" ]; then
     echo -e "${ORANGE}[VodManager]${NC} ${RED}[1]${NC} Vod ${id} already downloaded, skipping."
@@ -75,12 +68,6 @@ do
     --log-level ${log_level} \
     --temp-path ${temp_location} \
     -o ${vods_location}${id}.mp4
-
-
-    #if [ $? -ne 0 ]; then
-    #  echo "Error downloading video ${id}, skipping."
-    #  continue
-    #fi
 
   fi
 
@@ -143,13 +130,12 @@ do
   #  ${vods_location}${id}_combined.mp4
 
   
-
-  # Continue if video is already downloaded
   if [ -f "${vods_location}${id}_combined.mp4" ]; then
     echo -e "${ORANGE}[VodManager]${NC} ${RED}[4]${NC} Combined Video ${id} already rendered, skipping."
   else
-    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[4]${NC} Rendering chat overlay for AlsoMij vod, id: ${id}..."
+    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[4]${NC} Baking chat overlay into AlsoMij vod, id: ${id}..."
 
+    # -crf 26
 	# -preset slow
     ffmpeg \
      -i ${vods_location}${id}_chat.mp4 \
@@ -159,15 +145,28 @@ do
      -c:a copy \
      -c:v libx264 \
      -preset medium \
-     -crf 26 \
+     -crf 23 \
      ${vods_location}${id}_combined.mp4
+
+    # Upload to Youtube after rendering/baking
+    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[5]${NC} Uploading final AlsoMij vod, id: ${id}..."
+
+    # Variables from Vod
+    title=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .title")
+    created_at=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .created_at")
+
+    set -x
+    youtube-upload \
+      --title="${title} [${created_at}]" \
+      --client-secrets="my_client_secrets.json" \
+      --credentials-file="my_credentials.json" \
+      --privacy private \
+      ${vods_location}${id}_combined.mp4
+    set +x
+
   fi
 
-
-  #echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[5]${NC} Uploading final AlsoMij vod, id: ${id}..."
-
   echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} Finished processing video ${id}"
-
 
   #set +x
 done
