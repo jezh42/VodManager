@@ -149,20 +149,16 @@ do
      ${vods_location}${id}_combined.mp4
 
     # Upload to Youtube after rendering/baking
-    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[5]${NC} Uploading final AlsoMij vod, id: ${id}..."
+    #echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[5]${NC} Uploading final AlsoMij vod, id: ${id}..."
 
     # Variables from Vod
     title=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .title")
     created_at=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .created_at")
 
-    set -x
-    youtube-upload \
-      --title="${title} [${created_at}]" \
-      --client-secrets="my_client_secrets.json" \
-      --credentials-file="my_credentials.json" \
-      --privacy private \
-      ${vods_location}${id}_combined.mp4
-    set +x
+    #youtube-upload \
+      #--title="${title} [${created_at}]" \
+      #--privacy private \
+      #${vods_location}${id}_combined.mp4
 
   fi
 
