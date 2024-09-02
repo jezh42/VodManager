@@ -149,16 +149,26 @@ do
      ${vods_location}${id}_combined.mp4
 
     # Upload to Youtube after rendering/baking
-    #echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[5]${NC} Uploading final AlsoMij vod, id: ${id}..."
+    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[5]${NC} Uploading final AlsoMij vod, id: ${id}..."
 
     # Variables from Vod
     title=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .title")
     created_at=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .created_at")
 
-    #youtube-upload \
-      #--title="${title} [${created_at}]" \
-      #--privacy private \
-      #${vods_location}${id}_combined.mp4
+    youtube-upload \
+      --title="${title} [${created_at}]" \
+      --privacy private \
+      ${vods_location}${id}_combined.mp4
+
+    if youtube-upload \
+          --title="${title} [${created_at}]" \
+          --privacy private \
+          ${vods_location}${id}_combined.mp4; 
+    then
+      echo "${id}_combined.mp4 - ${title} [${created_at}]" >> uploadedVods.txt
+    else
+      echo "${id}_combined.mp4 - ${title} [${created_at}]" >> failedUploads.txt
+    fi
 
   fi
 
