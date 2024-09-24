@@ -29,7 +29,7 @@ temp_location="${vods_location}temp/"
 log_level="Status,Info,Warning,Error"
 chat_height=176
 chat_width=400
-vodCount=30
+vodCount=100
 
 ORANGE='\033[0;33m'
 RED='\033[0;31m'
@@ -51,7 +51,8 @@ vod_data=$(twitch api get /videos \
 
 
 # Loop through all x videos getting id, title and created_at
-for id in $(echo ${vod_data} | jq -r '.data[].id') 
+#for id in $(echo ${vod_data} | jq -r '.data[].id')
+for id in $(echo ${vod_data} | jq -r '.data[].id' | tac)
 do
 
   #set -x
@@ -154,16 +155,12 @@ do
     # Variables from Vod
     title=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .title")
     created_at=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .created_at")
-
-    youtube-upload \
-      --title="${title} [${created_at}]" \
-      --privacy private \
-      ${vods_location}${id}_combined.mp4
+    combined_title="${title:0:70} [${created_at}]"
 
     if youtube-upload \
-          --title="${title} [${created_at}]" \
-          --privacy private \
-          ${vods_location}${id}_combined.mp4; 
+        -t "${combined_title:0:99}" \
+        --privacy private \
+        ${vods_location}${id}_combined.mp4;
     then
       echo "${id}_combined.mp4 - ${title} [${created_at}]" >> uploadedVods.txt
     else
