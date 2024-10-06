@@ -55,7 +55,7 @@ vod_data=$(twitch api get /videos \
 for id in $(echo ${vod_data} | jq -r '.data[].id')
 do
 
-  set -x
+  #set -x
 
   if [ -f "${vods_location}${id}.mp4" ]; then
     echo -e "${ORANGE}[VodManager]${NC} ${RED}[1]${NC} Vod ${id} already downloaded, skipping."
@@ -163,10 +163,10 @@ do
         --privacy private \
         ${vods_location}${id}_combined.mp4;
     then
-      echo "[$(date +\'%d-%m-%Y %T\')] ${id}_combined.mp4 - ${title} [${created_at_date}]" >> uploadedVods.txt
+      echo "[$(date +\'%d-%m-%Y %T\')] ${id}_combined.mp4 - ${combined_title:0:99}]" >> uploadedVods.txt
       echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} ${id} uploaded successfully! Yippers!"
     else
-      echo "[$(date +\'%d-%m-%Y %T\')] ${id}_combined.mp4 - ${title} [${created_at_date}]" >> failedUploads.txt
+      echo "[$(date +\'%d-%m-%Y %T\')] ${id}_combined.mp4 - ${combined_title:0:99}]" >> failedUploads.txt
       echo -e "${ORANGE}[VodManager]${NC} ${RED}[4]${NC} ${id} failed to upload. Logging..."
     fi
 
@@ -174,5 +174,5 @@ do
 
   echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} Finished processing video ${id}"
 
-  set +x
+  #set +x
 done
