@@ -23,7 +23,7 @@
 
 
 # Global Vars
-vods_location='/mnt/NAS_Drive/VODs/AlsoMij/'
+vods_location='/mnt/zimablade/vods/AlsoMij/'
 temp_location="${vods_location}temp/"
 #log_level="Status,Info,Warning,Error,Verbose"
 log_level="Status,Info,Warning,Error"
@@ -51,11 +51,11 @@ vod_data=$(twitch api get /videos \
 
 
 # Loop through all x videos getting id, title and created_at
-#for id in $(echo ${vod_data} | jq -r '.data[].id')
-for id in $(echo ${vod_data} | jq -r '.data[].id' | tac)
+#for id in $(echo ${vod_data} | jq -r '.data[].id' | tac)
+for id in $(echo ${vod_data} | jq -r '.data[].id')
 do
 
-  #set -x
+  set -x
 
   if [ -f "${vods_location}${id}.mp4" ]; then
     echo -e "${ORANGE}[VodManager]${NC} ${RED}[1]${NC} Vod ${id} already downloaded, skipping."
@@ -155,21 +155,24 @@ do
     # Variables from Vod
     title=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .title")
     created_at=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .created_at")
-    combined_title="${title:0:70} [${created_at}]"
+    created_at_date=$(echo ${created_at} | sed 's/T.*//g')
+    combined_title="${id} - ${title:0:67} [${created_at_date}]"
 
     if youtube-upload \
         -t "${combined_title:0:99}" \
         --privacy private \
         ${vods_location}${id}_combined.mp4;
     then
-      echo "${id}_combined.mp4 - ${title} [${created_at}]" >> uploadedVods.txt
+      echo "[$(date +\'%d-%m-%Y %T\')] ${id}_combined.mp4 - ${title} [${created_at_date}]" >> uploadedVods.txt
+      echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} ${id} uploaded successfully! Yippers!"
     else
-      echo "${id}_combined.mp4 - ${title} [${created_at}]" >> failedUploads.txt
+      echo "[$(date +\'%d-%m-%Y %T\')] ${id}_combined.mp4 - ${title} [${created_at_date}]" >> failedUploads.txt
+      echo -e "${ORANGE}[VodManager]${NC} ${RED}[4]${NC} ${id} failed to upload. Logging..."
     fi
 
   fi
 
   echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} Finished processing video ${id}"
 
-  #set +x
+  set +x
 done
