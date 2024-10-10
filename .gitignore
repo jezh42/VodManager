@@ -1,1 +1,5 @@
 twitch-vod-chapters/
+.youtube-upload-credentials.json
+.client_secrets.json
+failedUploads.txt
+uploadedVods.txt

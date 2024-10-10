@@ -161,12 +161,14 @@ do
     if youtube-upload \
         -t "${combined_title:0:99}" \
         --privacy private \
+        --client-secrets="$(pwd)/.client_secrets.json" \
+        --credentials-file="$(pwd)/.youtube-upload-credentials.json" \
         ${vods_location}${id}_combined.mp4;
     then
-      echo "[$(date +\'%d-%m-%Y %T\')] ${id}_combined.mp4 - ${combined_title:0:99}]" >> uploadedVods.txt
+      echo "[$(date +'%d-%m-%Y %T')] ${id}_combined.mp4 - ${combined_title:0:99}]" >> uploadedVods.txt
       echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} ${id} uploaded successfully! Yippers!"
     else
-      echo "[$(date +\'%d-%m-%Y %T\')] ${id}_combined.mp4 - ${combined_title:0:99}]" >> failedUploads.txt
+      echo "[$(date +'%d-%m-%Y %T')] ${id}_combined.mp4 - ${combined_title:0:99}]" >> failedUploads.txt
       echo -e "${ORANGE}[VodManager]${NC} ${RED}[4]${NC} ${id} failed to upload. Logging..."
     fi
 
