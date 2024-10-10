@@ -3,3 +3,5 @@ twitch-vod-chapters/
 .client_secrets.json
 failedUploads.txt
 uploadedVods.txt
+vodmanager.log
+vodmanager.config

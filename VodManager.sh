@@ -15,15 +15,32 @@
 #  Uploads to Youtube
 #
 # Future Features:
-#  Better logging
+#  Better and cleaner logging
 #  Command Line count vods
 #  Supporting multiple streamers
-#  Command line supply streamers
 #  Chapter support?
-
+#
+#  Run Daily
+#   OR
+#  Always run as a service, checking for new vods
+#
+#  Rust Version
+#  Quit Management
+#  Configuration file
+#    Vod Location
+#    List of streamers
+#    Start with newest or oldest
+#  FFMpeg Status
+#  General Declutter of Output
+#  Verbose Support (-v)
+#  Debugging Support (-d)
+#  Logging/tee log natively
+#
+#  Log youtube completed video
 
 # Global Vars
-vods_location='/mnt/zimablade/vods/AlsoMij/'
+#vods_location='/mnt/zimablade/vods/AlsoMij/'
+vods_location='/mnt/NAS_Drive/VODs/AlsoMij'
 temp_location="${vods_location}temp/"
 #log_level="Status,Info,Warning,Error,Verbose"
 log_level="Status,Info,Warning,Error"
