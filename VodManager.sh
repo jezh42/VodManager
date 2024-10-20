@@ -5,38 +5,6 @@
 #
 # Make sure to configure the global vars
 #
-#
-# Goal:
-#  Downloads VODs
-#  Downloads Chat
-#  Renders Chat
-#  Combines Chat onto video
-#   Old Vod is still kept
-#  Uploads to Youtube
-#
-# Future Features:
-#  Better and cleaner logging
-#  Command Line count vods
-#  Supporting multiple streamers
-#  Chapter support?
-#
-#  Run Daily
-#   OR
-#  Always run as a service, checking for new vods
-#
-#  Rust Version
-#  Quit Management
-#  Configuration file
-#    Vod Location
-#    List of streamers
-#    Start with newest or oldest
-#  FFMpeg Status
-#  General Declutter of Output
-#  Verbose Support (-v)
-#  Debugging Support (-d)
-#  Logging/tee log natively
-#
-#  Log youtube completed video
 
 # Global Vars
 #vods_location='/mnt/zimablade/vods/AlsoMij/'
@@ -175,17 +143,19 @@ do
     created_at_date=$(echo ${created_at} | sed 's/T.*//g')
     combined_title="${id} - ${title:0:67} [${created_at_date}]"
 
-    if youtube-upload \
+    if youtubeuploader \
         -t "${combined_title:0:99}" \
-        --privacy private \
-        --client-secrets="$(pwd)/.client_secrets.json" \
-        --credentials-file="$(pwd)/.youtube-upload-credentials.json" \
-        ${vods_location}${id}_combined.mp4;
+        -privacy 'private' \
+        -oAuthPort 4242 \
+        -cache ".request.token" \
+        -secrets "client_secrets.json" \
+        -sendFilename true \
+        -filename ${vods_location}${id}_combined.mp4;
     then
-      echo "[$(date +'%d-%m-%Y %T')] ${id}_combined.mp4 - ${combined_title:0:99}]" >> uploadedVods.txt
+      echo "[$(date +'%d-%m-%Y %T')] ${id}_combined.mp4 - ${combined_title:0:99}" >> uploadedVods.txt
       echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} ${id} uploaded successfully! Yippers!"
     else
-      echo "[$(date +'%d-%m-%Y %T')] ${id}_combined.mp4 - ${combined_title:0:99}]" >> failedUploads.txt
+      echo "[$(date +'%d-%m-%Y %T')] ${id}_combined.mp4 - ${combined_title:0:99}" >> failedUploads.txt
       echo -e "${ORANGE}[VodManager]${NC} ${RED}[4]${NC} ${id} failed to upload. Logging..."
     fi
 

@@ -5,3 +5,4 @@ failedUploads.txt
 uploadedVods.txt
 vodmanager.log
 vodmanager.config
+.request.token
