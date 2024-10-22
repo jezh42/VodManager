@@ -12,8 +12,7 @@ Requires the following programs installed and configured (e.g. auth setup) and i
  - Renders Chat
  - Combines Chat onto video
  - Old Vod is still kept
- - Uploads to Youtube
-   - https://github.com/porjo/youtubeuploader
+ - Uploads to Youtube via [YoutubeUploader](https://github.com/porjo/youtubeuploader)
 
 
 ## Future Features:
@@ -43,3 +42,13 @@ TODO:
 - ID and Title search (with jq) is a bit weird
    - Might convert to Zig to work better with objects and json
 - Strip Invalid Chars for Youtube Title `>-<`
+
+## Youtube API
+
+ - Follow the configuration steps detailed in [YoutubeUploader](https://github.com/porjo/youtubeuploader).
+
+ - Recommended to publish your GCP Project.
+
+ - Keeping it in testing only gives refresh tokens that last 7 days.
+
+ - Publishing it doesn't require verification for our uses and gives refresh tokens that last forever.

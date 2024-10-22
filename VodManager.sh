@@ -8,13 +8,13 @@
 
 # Global Vars
 #vods_location='/mnt/zimablade/vods/AlsoMij/'
-vods_location='/mnt/NAS_Drive/VODs/AlsoMij'
+vods_location='/mnt/NAS_Drive/VODs/AlsoMij/'
 temp_location="${vods_location}temp/"
 #log_level="Status,Info,Warning,Error,Verbose"
 log_level="Status,Info,Warning,Error"
 chat_height=176
 chat_width=400
-vodCount=100
+vodCount=5
 
 ORANGE='\033[0;33m'
 RED='\033[0;31m'
@@ -43,9 +43,9 @@ do
   #set -x
 
   if [ -f "${vods_location}${id}.mp4" ]; then
-    echo -e "${ORANGE}[VodManager]${NC} ${RED}[1]${NC} Vod ${id} already downloaded, skipping."
+    echo -e "${ORANGE}[VodManager]${NC} ${RED}[1]${NC} Vod ${ORANGE}${id}${NC} already downloaded, skipping."
   else
-    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[1]${NC} Downloading AlsoMij vod, id: ${id}..."
+    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[1]${NC} Downloading AlsoMij vod, id: ${ORANGE}${id}${NC}..."
     
     # TODO: Change the ffmpeg options to be less filesize?
     TwitchDownloaderCLI videodownload \
@@ -59,9 +59,9 @@ do
 
  
   if [ -f "${vods_location}${id}_chat.json" ]; then
-    echo -e "${ORANGE}[VodManager]${NC} ${RED}[2]${NC} Chat ${id} already downloaded, skipping."
+    echo -e "${ORANGE}[VodManager]${NC} ${RED}[2]${NC} Chat ${ORANGE}${id}${NC} already downloaded, skipping."
   else
-    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[2]${NC} Downloading AlsoMij chat, id: ${id}..."
+    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[2]${NC} Downloading AlsoMij chat, id: ${ORANGE}${id}${NC}..."
     
     TwitchDownloaderCLI chatdownload -E \
       --id ${id} \
@@ -73,14 +73,11 @@ do
 
   
   if [ -f "${vods_location}${id}_chat.mp4" ]; then
-    echo -e "${ORANGE}[VodManager]${NC} ${RED}[3]${NC} Chat ${id} already rendered, skipping."
+    echo -e "${ORANGE}[VodManager]${NC} ${RED}[3]${NC} Chat ${ORANGE}${id}${NC} already rendered, skipping."
   else
-    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[3]${NC} Rendering AlsoMij chat, id: ${id}..."
+    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[3]${NC} Rendering AlsoMij chat, id: ${ORANGE}${id}${NC}..."
+
     # Render chat
-    # Change size
-    # --background-color "#88111111" \
-    # "#00000000"
-    #  "alternate": "#222222" "regular": "#66191919"
     TwitchDownloaderCLI chatrender \
       -i ${vods_location}${id}_chat.json \
       -h ${chat_height} \
@@ -92,37 +89,16 @@ do
       --temp-path ${temp_location} \
       --generate-mask \
       -o ${vods_location}${id}_chat.mp4
+
   fi
   
-  # ffmpeg combine chat ontop of vod -> new vid
-  # https://stackoverflow.com/questions/52547971/overlay-transparency-video-on-top-of-other-video
-  # https://github.com/lay295/TwitchDownloader/issues/79
-  # https://stackoverflow.com/questions/23201134/transparent-argb-hex-value
-
-  #"[1:v]format=rgb24,colorkey=black:0.3:0.2,colorchannelmixer=aa=0.3[1t]; \
-  #[0:v][1t]overlay=W-w:0[outv]" \
-  # -crf 23 \
-  # -maxrate 5M -bufsize 10M \
-
-  # ffmpeg -y \
-  #  -i ${vods_location}${id}.mp4 \
-  #  -i ${vods_location}${id}_chat.mp4 \
-  #  -filter_complex \
-  #  '[1:v]format=rgba,colorchannelmixer=aa=0.5[1t]; [0:v][1t]overlay=W-w:0[outv]' \
-  #  -map [outv] -map 0:a \
-  #  -c:a copy \
-  #  -c:v libx264 \
-  #  -preset slow \
-  #  ${vods_location}${id}_combined.mp4
-
-  
+  # Bake chat onto VOD with transparency
   if [ -f "${vods_location}${id}_combined.mp4" ]; then
-    echo -e "${ORANGE}[VodManager]${NC} ${RED}[4]${NC} Combined Video ${id} already rendered, skipping."
+    echo -e "${ORANGE}[VodManager]${NC} ${RED}[4]${NC} Combined Video ${ORANGE}${id}${NC} already rendered, skipping."
   else
-    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[4]${NC} Baking chat overlay into AlsoMij vod, id: ${id}..."
+    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[4]${NC} Baking chat overlay into AlsoMij vod, id: ${ORANGE}${id}${NC}..."
 
-    # -crf 26
-	# -preset slow
+    # Baking time
     ffmpeg \
      -i ${vods_location}${id}_chat.mp4 \
      -i ${vods_location}${id}_chat_mask.mp4 \
@@ -135,7 +111,7 @@ do
      ${vods_location}${id}_combined.mp4
 
     # Upload to Youtube after rendering/baking
-    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[5]${NC} Uploading final AlsoMij vod, id: ${id}..."
+    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[5]${NC} Uploading final AlsoMij vod, id: ${ORANGE}${id}${NC}..."
 
     # Variables from Vod
     title=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .title")
@@ -143,25 +119,28 @@ do
     created_at_date=$(echo ${created_at} | sed 's/T.*//g')
     combined_title="${id} - ${title:0:67} [${created_at_date}]"
 
+    set -x
+
     if youtubeuploader \
         -t "${combined_title:0:99}" \
         -privacy 'private' \
         -oAuthPort 4242 \
         -cache ".request.token" \
-        -secrets "client_secrets.json" \
+        -secrets ".client_secrets.json" \
         -sendFilename true \
         -filename ${vods_location}${id}_combined.mp4;
     then
       echo "[$(date +'%d-%m-%Y %T')] ${id}_combined.mp4 - ${combined_title:0:99}" >> uploadedVods.txt
-      echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} ${id} uploaded successfully! Yippers!"
+      echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} ${ORANGE}${id}${NC} uploaded successfully! Yippers!"
     else
       echo "[$(date +'%d-%m-%Y %T')] ${id}_combined.mp4 - ${combined_title:0:99}" >> failedUploads.txt
-      echo -e "${ORANGE}[VodManager]${NC} ${RED}[4]${NC} ${id} failed to upload. Logging..."
+      echo -e "${ORANGE}[VodManager]${NC} ${RED}[6]${NC} ${ORANGE}${id}${NC} failed to upload. Logging..."
     fi
 
   fi
 
-  echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} Finished processing video ${id}"
+  echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[7]${NC} Finished processing video ${ORANGE}${id}${NC}"
 
-  #set +x
+  set +x
+
 done
