@@ -59,9 +59,9 @@ do
 
  
   if [ -f "${vods_location}${id}_chat.json" ]; then
-    echo -e "${ORANGE}[VodManager]${NC} ${RED}[2]${NC} Chat ${ORANGE}${id}${NC} already downloaded, skipping."
+    echo -e "\n${ORANGE}[VodManager]${NC} ${RED}[2]${NC} Chat ${ORANGE}${id}${NC} already downloaded, skipping."
   else
-    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[2]${NC} Downloading AlsoMij chat, id: ${ORANGE}${id}${NC}..."
+    echo -e "\n${ORANGE}[VodManager]${NC} ${GREEN}[2]${NC} Downloading AlsoMij chat, id: ${ORANGE}${id}${NC}..."
     
     TwitchDownloaderCLI chatdownload -E \
       --id ${id} \
