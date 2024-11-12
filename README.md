@@ -1,10 +1,10 @@
 # VodManager
 
 Requires the following programs installed and configured (e.g. auth setup) and in your PATH:
- - youtubeuploader
- - ffmpeg
- - twitch
- - TwitchDownloaderCLI
+ - [YoutubeUploader](https://github.com/porjo/youtubeuploader)
+ - [ffmpeg](https://www.ffmpeg.org/download.html)
+ - [twitch](https://dev.twitch.tv/docs/cli/)
+ - [TwitchDownloaderCLI](https://github.com/lay295/TwitchDownloader)
 
 ## Features:
  - Downloads VODs
@@ -13,6 +13,7 @@ Requires the following programs installed and configured (e.g. auth setup) and i
  - Combines Chat onto video
  - Old Vod is still kept
  - Uploads to Youtube via [YoutubeUploader](https://github.com/porjo/youtubeuploader)
+ - Manages a queue of vods, starting at the oldest and fetch new ones on finish
 
 
 ## Future Features:
@@ -30,6 +31,7 @@ Requires the following programs installed and configured (e.g. auth setup) and i
    - List of streamers
    - Start with newest or oldest
  - FFMpeg Status
+ - FFMpeg optimisation
  - General Declutter of Output
  - Verbose Support (-v)
  - Debugging Support (-d)

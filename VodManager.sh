@@ -14,11 +14,12 @@ temp_location="${vods_location}temp/"
 log_level="Status,Info,Warning,Error"
 chat_height=176
 chat_width=400
-vodCount=5
+vodCount=15
 
 ORANGE='\033[0;33m'
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 # List of users https://dev.twitch.tv/docs/api/reference/#get-users
@@ -34,18 +35,24 @@ vod_data=$(twitch api get /videos \
   -q first=${vodCount}
 )
 
+# Make the queue
+queue=($(echo ${vod_data} | jq -r '.data[].id' | sort -u))
 
-# Loop through all x videos getting id, title and created_at
-#for id in $(echo ${vod_data} | jq -r '.data[].id' | tac)
-for id in $(echo ${vod_data} | jq -r '.data[].id')
+
+# Loop through the queue, indefinitely 
+while true
 do
 
   #set -x
 
+  # Pop the first element
+  id=${queue[0]}
+  queue=("${queue[@]:1}")
+
   if [ -f "${vods_location}${id}.mp4" ]; then
-    echo -e "${ORANGE}[VodManager]${NC} ${RED}[1]${NC} Vod ${ORANGE}${id}${NC} already downloaded, skipping."
+    echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${RED}[1]${NC} Vod ${ORANGE}${id}${NC} already downloaded, skipping."
   else
-    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[1]${NC} Downloading AlsoMij vod, id: ${ORANGE}${id}${NC}..."
+    echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${GREEN}[1]${NC} Downloading AlsoMij vod, id: ${ORANGE}${id}${NC}..."
     
     # TODO: Change the ffmpeg options to be less filesize?
     TwitchDownloaderCLI videodownload \
@@ -59,9 +66,9 @@ do
 
  
   if [ -f "${vods_location}${id}_chat.json" ]; then
-    echo -e "\n${ORANGE}[VodManager]${NC} ${RED}[2]${NC} Chat ${ORANGE}${id}${NC} already downloaded, skipping."
+    echo -e "\n${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${RED}[2]${NC} Chat ${ORANGE}${id}${NC} already downloaded, skipping."
   else
-    echo -e "\n${ORANGE}[VodManager]${NC} ${GREEN}[2]${NC} Downloading AlsoMij chat, id: ${ORANGE}${id}${NC}..."
+    echo -e "\n${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${GREEN}[2]${NC} Downloading AlsoMij chat, id: ${ORANGE}${id}${NC}..."
     
     TwitchDownloaderCLI chatdownload -E \
       --id ${id} \
@@ -73,9 +80,9 @@ do
 
   
   if [ -f "${vods_location}${id}_chat.mp4" ]; then
-    echo -e "${ORANGE}[VodManager]${NC} ${RED}[3]${NC} Chat ${ORANGE}${id}${NC} already rendered, skipping."
+    echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${RED}[3]${NC} Chat ${ORANGE}${id}${NC} already rendered, skipping."
   else
-    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[3]${NC} Rendering AlsoMij chat, id: ${ORANGE}${id}${NC}..."
+    echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${GREEN}[3]${NC} Rendering AlsoMij chat, id: ${ORANGE}${id}${NC}..."
 
     # Render chat
     TwitchDownloaderCLI chatrender \
@@ -94,9 +101,9 @@ do
   
   # Bake chat onto VOD with transparency
   if [ -f "${vods_location}${id}_combined.mp4" ]; then
-    echo -e "${ORANGE}[VodManager]${NC} ${RED}[4]${NC} Combined Video ${ORANGE}${id}${NC} already rendered, skipping."
+    echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${RED}[4]${NC} Combined Video ${ORANGE}${id}${NC} already rendered, skipping."
   else
-    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[4]${NC} Baking chat overlay into AlsoMij vod, id: ${ORANGE}${id}${NC}..."
+    echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${GREEN}[4]${NC} Baking chat overlay into AlsoMij vod, id: ${ORANGE}${id}${NC}..."
 
     # Baking time
     ffmpeg \
@@ -111,7 +118,7 @@ do
      ${vods_location}${id}_combined.mp4
 
     # Upload to Youtube after rendering/baking
-    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[5]${NC} Uploading final AlsoMij vod, id: ${ORANGE}${id}${NC}..."
+    echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${GREEN}[5]${NC} Uploading final AlsoMij vod, id: ${ORANGE}${id}${NC}..."
 
     # Variables from Vod
     title=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .title")
@@ -132,15 +139,43 @@ do
         -description "";
     then
       echo "[$(date +'%d-%m-%Y %T')] ${id}_combined.mp4 - ${combined_title:0:99}" >> uploadedVods.txt
-      echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} ${ORANGE}${id}${NC} uploaded successfully! Yippers!"
+      echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${GREEN}[6]${NC} ${ORANGE}${id}${NC} uploaded successfully! Yippers!"
     else
       echo "[$(date +'%d-%m-%Y %T')] ${id}_combined.mp4 - ${combined_title:0:99}" >> failedUploads.txt
-      echo -e "${ORANGE}[VodManager]${NC} ${RED}[6]${NC} ${ORANGE}${id}${NC} failed to upload. Logging..."
+      echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${RED}[6]${NC} ${ORANGE}${id}${NC} failed to upload. Logging..."
     fi
 
   fi
 
-  echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[7]${NC} Finished processing video ${ORANGE}${id}${NC}"
+  echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${GREEN}[7]${NC} Finished processing video ${ORANGE}${id}${NC}"
+
+  # Check for new video, constantly checking if empty
+  echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${PURPLE}[8]${NC} Checking Twitch for new VODs..."
+  checkTwitchOnce=true
+  oldQueueCount=${#queue[@]}
+  while [ ${#queue[@]} -eq 0 -a checkTwitchOnce = true]
+  do 
+    checkTwitchOnce=false
+    
+    # Fetch from Twitch again
+    vod_data=$(twitch api get /videos \
+      -q user_id=${channels['AlsoMij']} \
+      -q sort=time \
+      -q type=archive \
+      -q first=5
+    )
+
+    # Add the next 5 vod ids
+    queue+=( $(echo ${vod_data} | jq -r '.data[].id' | sort -u) )
+    # Unique sort array (hack)
+    queue=($(for i in "${queue[@]}"; do echo "${i}"; done | sort -u))
+
+  done
+
+  newQueueCount=${#queue[@]}
+  diff="$(($newQueueCount-$oldQueueCount))"
+
+  echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${PURPLE}[8]${NC} Added "
 
   #set +x
 
