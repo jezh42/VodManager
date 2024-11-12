@@ -175,7 +175,7 @@ do
   newQueueCount=${#queue[@]}
   diff="$(($newQueueCount-$oldQueueCount))"
 
-  echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${PURPLE}[8]${NC} Added "
+  echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${PURPLE}[8]${NC} Added ${diff} new vods to the queue"
 
   #set +x
 
