@@ -119,16 +119,17 @@ do
     created_at_date=$(echo ${created_at} | sed 's/T.*//g')
     combined_title="${id} - ${title:0:67} [${created_at_date}]"
 
-    set -x
+    #set -x
 
     if youtubeuploader \
-        -t "${combined_title:0:99}" \
+        -title "${combined_title:0:99}" \
+        -filename ${vods_location}${id}_combined.mp4 \
         -privacy 'private' \
         -oAuthPort 4242 \
         -cache ".request.token" \
         -secrets ".client_secrets.json" \
         -sendFilename true \
-        -filename ${vods_location}${id}_combined.mp4;
+        -description "";
     then
       echo "[$(date +'%d-%m-%Y %T')] ${id}_combined.mp4 - ${combined_title:0:99}" >> uploadedVods.txt
       echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} ${ORANGE}${id}${NC} uploaded successfully! Yippers!"
@@ -141,6 +142,6 @@ do
 
   echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[7]${NC} Finished processing video ${ORANGE}${id}${NC}"
 
-  set +x
+  #set +x
 
 done
