@@ -153,7 +153,7 @@ do
   echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${PURPLE}[8]${NC} Checking Twitch for new VODs..."
   checkTwitchOnce=true
   oldQueueCount=${#queue[@]}
-  while [ ${#queue[@]} -eq 0 -a checkTwitchOnce = true]
+  while [ ${#queue[@]} -eq 0 -o checkTwitchOnce = true]
   do 
     checkTwitchOnce=false
     
