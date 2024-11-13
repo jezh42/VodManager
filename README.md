@@ -5,6 +5,7 @@ Requires the following programs installed and configured (e.g. auth setup) and i
  - [ffmpeg](https://www.ffmpeg.org/download.html)
  - [twitch](https://dev.twitch.tv/docs/cli/)
  - [TwitchDownloaderCLI](https://github.com/lay295/TwitchDownloader)
+ - [pv](https://linux.die.net/man/1/pv)
 
 ## Features:
  - Downloads VODs

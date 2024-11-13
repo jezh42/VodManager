@@ -66,9 +66,9 @@ do
 
  
   if [ -f "${vods_location}${id}_chat.json" ]; then
-    echo -e "\n${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${RED}[2]${NC} Chat ${ORANGE}${id}${NC} already downloaded, skipping."
+    echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${RED}[2]${NC} Chat ${ORANGE}${id}${NC} already downloaded, skipping."
   else
-    echo -e "\n${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${GREEN}[2]${NC} Downloading AlsoMij chat, id: ${ORANGE}${id}${NC}..."
+    echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${GREEN}[2]${NC} Downloading AlsoMij chat, id: ${ORANGE}${id}${NC}..."
     
     TwitchDownloaderCLI chatdownload -E \
       --id ${id} \
@@ -153,11 +153,24 @@ do
   echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${PURPLE}[8]${NC} Checking Twitch for new VODs..."
   checkTwitchOnce=true
   oldQueueCount=${#queue[@]}
-  while [ ${#queue[@]} -eq 0 -o $checkTwitchOnce = true]
+  while [ ${#queue[@]} -eq 0 -o $checkTwitchOnce = true ]
   do 
     checkTwitchOnce=false
     
     # Fetch from Twitch again
+    # If queue is empty (and looping), then check every 5 minutes
+    if [ ${#queue[@]} -eq 0 ]; then
+      # TODO: add a spinner
+      # TODO: https://unix.stackexchange.com/questions/360198/can-i-overwrite-multiple-lines-of-stdout-at-the-command-line-without-losing-term
+      # \033[0K\r
+      echo -ne "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${PURPLE}[8]${NC} ZZZZ...\033[0K\r"
+      sleep 5m | pv -t 
+      #echo -ne "$(sleep 5 | pv -F $'%t')\033[0K\r" # -N "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${PURPLE}[8]${NC} ZZZZ...\033[0K\r";
+      #echo -ne "\033[0K\r"
+      #| tr $'\n' $'\033[0K\r' #
+      #-c ?
+    fi
+
     vod_data=$(twitch api get /videos \
       -q user_id=${channels['AlsoMij']} \
       -q sort=time \
@@ -166,7 +179,14 @@ do
     )
 
     # Add the next 5 vod ids
-    queue+=( $(echo ${vod_data} | jq -r '.data[].id' | sort -u) )
+    for v in $(echo ${vod_data} | jq -r '.data[].id' | sort -u) 
+    do
+      # Add to queue if it doesn't exist
+      if [ ! -f "${vods_location}${v}_combined.mp4" ]; then
+        queue+=($v)
+      fi
+    done
+
     # Unique sort array (hack)
     queue=($(for i in "${queue[@]}"; do echo "${i}"; done | sort -u))
 
@@ -175,7 +195,7 @@ do
   newQueueCount=${#queue[@]}
   diff="$(($newQueueCount-$oldQueueCount))"
 
-  echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${PURPLE}[8]${NC} Added ${diff} new vods to the queue"
+  echo -e "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${PURPLE}[8]${NC} Added ${diff} new vods to the queue\n"
 
   #set +x
 
