@@ -15,6 +15,7 @@ Requires the following programs installed and configured (e.g. auth setup) and i
  - Old Vod is still kept
  - Uploads to Youtube via [YoutubeUploader](https://github.com/porjo/youtubeuploader)
  - Manages a queue of vods, starting at the oldest and fetch new ones on finish
+ - [NEW] Checks if the vod is still live (hence incomplete) and will skip until stream is over
 
 
 ## Future Features:
