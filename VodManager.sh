@@ -45,29 +45,30 @@ update_queue () {
 
   vod_count=$1
 
-# Get latest x vod Ids (Twitch API)
-# https://dev.twitch.tv/docs/api/reference/#get-videos
-vod_data=$(twitch api get /videos \
-      -q user_id=${channels[$current_streamer]} \
-  -q sort=time \
-  -q type=archive \
-      -q first=${vod_count}
-)
+  # Get latest x vod Ids (Twitch API)
+  # https://dev.twitch.tv/docs/api/reference/#get-videos
+  vod_data=$(twitch api get /videos \
+    -q user_id=${channels[$current_streamer]} \
+    -q sort=time \
+    -q type=archive \
+    -q first=${vod_count}
+  )
 
-    # Add the next vod ids
-    for v in $(echo ${vod_data} | jq -r '.data[].id' | sort -u)
-    do
-      # Add to queue if it doesn't exist
-      if [ ! -f "${vods_location}${v}_combined.mp4" ]; then
-        queue+=($v)
-      fi
-    done
+  # Add the next vod ids
+  for v in $(echo ${vod_data} | jq -r '.data[].id' | sort -u)
+  do
+    # Add to queue if it doesn't exist
+    if [ ! -f "${vods_location}${v}_combined.mp4" ]; then
+      queue+=($v)
+    fi
+  done
 
-    # Unique sort array (hack)
-    queue=($(for i in "${queue[@]}"; do echo "${i}"; done | sort -u))
+  # Unique sort array (hack)
+  queue=($(for i in "${queue[@]}"; do echo "${i}"; done | sort -u))
 
-    # TODO: What if queue empty / no IDs returned from twitch
-    # Fail early!!!
+  # TODO: What if queue empty / no IDs returned from twitch
+  # Fail early!!!
+
 }
 
 # Get the queue for the first time
@@ -82,7 +83,7 @@ do
   # Get vod id from top of queue
   id=${queue[0]}
   queue=("${queue[@]:1}")
-  queue_count=$((${#queue[@]}+1))
+  queue_count=$((${#queue[@]}))
 
   # Current stream info, empty if not live
   current_stream=$(twitch api get /streams \
