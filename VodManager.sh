@@ -14,7 +14,8 @@ temp_location="${vods_location}temp/"
 log_level="Status,Info,Warning,Error"
 chat_height=176
 chat_width=400
-first_run_vod_count=15
+first_run_vod_update_count=15
+whilst_run_vod_update_count=10
 
 ORANGE='\033[0;33m'
 RED='\033[0;31m'
@@ -42,6 +43,7 @@ declare -a queue=()
 # First run is global vod count, others are 5
 update_queue () {
 
+  oldQueueCount=${#queue[@]}
 
   vod_count=$1
 
@@ -60,6 +62,8 @@ update_queue () {
     # Add to queue if it doesn't exist
     if [ ! -f "${vods_location}${v}_combined.mp4" ]; then
       queue+=($v)
+      queue_count=${#queue[@]}
+      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[U]${NC} Added ${v}..."
     fi
   done
 
@@ -69,10 +73,15 @@ update_queue () {
   # TODO: What if queue empty / no IDs returned from twitch
   # Fail early!!!
 
+  newQueueCount=${#queue[@]}
+  diff="$(($newQueueCount-$oldQueueCount))"
+
+  echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[U]${NC} Added ${diff} new vods to the queue"
+
 }
 
 # Get the queue for the first time
-update_queue $first_run_vod_count
+update_queue $first_run_vod_update_count
 
 # Loop through the queue, indefinitely 
 while true
@@ -100,7 +109,7 @@ do
     echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0]${NC} Vod ${ORANGE}${id}${NC} still live!!! Skipping."
 
     # Update the queue, use 5
-    update_queue "5"
+    update_queue $whilst_run_vod_update_count
     continue;
 
   fi
@@ -209,7 +218,7 @@ do
   # Check for new video, once after every video, constantly if queue is empty
   echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[8]${NC} Checking Twitch for new VODs..."
   checkTwitchOnce=true
-  oldQueueCount=${#queue[@]}
+  # oldQueueCount=${#queue[@]}
   while [ ${#queue[@]} -eq 0 -o $checkTwitchOnce = true ]
   do 
     checkTwitchOnce=false
@@ -229,14 +238,14 @@ do
     fi
 
     # Update the queue, use 5
-    update_queue "5"
+    update_queue $whilst_run_vod_update_count
 
   done
 
-  newQueueCount=${#queue[@]}
-  diff="$(($newQueueCount-$oldQueueCount))"
+  # newQueueCount=${#queue[@]}
+  # diff="$(($newQueueCount-$oldQueueCount))"
 
-  echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[8]${NC} Added ${diff} new vods to the queue\n"
+  # echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[8]${NC} Added ${diff} new vods to the queue\n"
 
   #set +x
 
