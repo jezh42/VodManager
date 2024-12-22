@@ -20,6 +20,11 @@ Requires the following programs installed and configured (e.g. auth setup) and i
 
 ## Future Features:
  - Better and cleaner logging
+   - Timestamp log
+ - Chapter support
+   - Title Guess
+   - Chapters linked YouTube
+   - Description of chapters
  - Command Line count vods
  - Supporting multiple streamers
  - Chapter support?

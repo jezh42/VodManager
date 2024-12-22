@@ -10,8 +10,7 @@
 #vods_location='/mnt/zimablade/vods/AlsoMij/'
 vods_location='/mnt/NAS_Drive/VODs/AlsoMij/'
 temp_location="${vods_location}temp/"
-#log_level="Status,Info,Warning,Error,Verbose"
-log_level="Status,Info,Warning,Error"
+log_level="Status,Info,Warning,Error" # Verbose
 chat_height=176
 chat_width=400
 first_run_vod_update_count=15
@@ -38,7 +37,8 @@ declare -a queue=()
 
 # Update function
 # Updates global queue with X vod IDs
-# Only add to queue if _combined doesn't exist...
+# Only add to queue if _combined doesn't exist
+#  & not live
 # Sorted by oldest (smallest) ID first
 # First run is global vod count, others are 5
 update_queue () {
@@ -59,12 +59,27 @@ update_queue () {
   # Add the next vod ids
   for v in $(echo ${vod_data} | jq -r '.data[].id' | sort -u)
   do
+
+    # Current stream info, empty if not live
+    current_stream=$(twitch api get /streams \
+    -q user_id=${channels[$current_streamer]} \
+    -q type=live)
+    current_stream_id=$(echo $current_stream | jq -r ".data[].id");
+
+    # Stream ID of the current Vod
+    vod_stream_id=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .stream_id");
+
+    # If vod == live then dont add to queue
+    # if streamer is live (id is non-zero) AND current stream id is the current vod id
+    if [[ -n "$current_stream_id" ]] && [[ "$current_stream_id" == "$vod_stream_id" ]]; then
+      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0]${NC} Vod ${ORANGE}${id}${NC} still live!!! Skipping."
     # Add to queue if it doesn't exist
-    if [ ! -f "${vods_location}${v}_combined.mp4" ]; then
+    elif [ ! -f "${vods_location}${v}_combined.mp4" ]; then
+      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[U]${NC} Added ${v}..."
       queue+=($v)
       queue_count=${#queue[@]}
-      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[U]${NC} Added ${v}..."
     fi
+
   done
 
   # Unique sort array (hack)
@@ -83,7 +98,7 @@ update_queue () {
 # Get the queue for the first time
 update_queue $first_run_vod_update_count
 
-# Loop through the queue, indefinitely 
+# Loop through the queue, indefinitely
 while true
 do
 
@@ -94,31 +109,11 @@ do
   queue=("${queue[@]:1}")
   queue_count=$((${#queue[@]}))
 
-  # Current stream info, empty if not live
-  current_stream=$(twitch api get /streams \
-  -q user_id=${channels[$current_streamer]} \
-  -q type=live)
-  current_stream_id=$(echo $current_stream | jq -r ".data[].id");
-
-  # Stream ID of the current Vod
-  vod_stream_id=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .stream_id");
-
-  # If vod != live then add to queue
-  # if streamer is live AND current stream is the current vod
-  if [[ -n "$current_stream_id" ]] && [[ "$current_stream_id" == "$vod_stream_id" ]]; then
-    echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0]${NC} Vod ${ORANGE}${id}${NC} still live!!! Skipping."
-
-    # Update the queue, use 5
-    update_queue $whilst_run_vod_update_count
-    continue;
-
-  fi
-
   if [ -f "${vods_location}${id}.mp4" ]; then
     echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[1]${NC} Vod ${ORANGE}${id}${NC} already downloaded, skipping."
   else
     echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${GREEN}[1]${NC} Downloading AlsoMij vod, id: ${ORANGE}${id}${NC}..."
-    
+
     # TODO: Change the ffmpeg options to be less filesize?
     TwitchDownloaderCLI videodownload \
     --id ${id} \
@@ -129,21 +124,21 @@ do
 
   fi
 
- 
+
   if [ -f "${vods_location}${id}_chat.json" ]; then
     echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[2]${NC} Chat ${ORANGE}${id}${NC} already downloaded, skipping."
   else
     echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${GREEN}[2]${NC} Downloading AlsoMij chat, id: ${ORANGE}${id}${NC}..."
-    
+
     TwitchDownloaderCLI chatdownload -E \
       --id ${id} \
       --log-level ${log_level} \
       --temp-path ${temp_location} \
       -o ${vods_location}${id}_chat.json
-  fi 
+  fi
 
 
-  
+
   if [ -f "${vods_location}${id}_chat.mp4" ]; then
     echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[3]${NC} Chat ${ORANGE}${id}${NC} already rendered, skipping."
   else
@@ -163,10 +158,15 @@ do
       -o ${vods_location}${id}_chat.mp4
 
   fi
-  
+
+  # TODO: Only render and upload if its longer than 30 minutes
+  # https://superuser.com/questions/361329/how-can-i-get-the-length-of-a-video-file-from-the-console
+  #length=ffprobe -i ${vods_location}${id}.mp4 -show_entries format=duration -v quiet -of csv="p=0"
+
   # Bake chat onto VOD with transparency
   if [ -f "${vods_location}${id}_combined.mp4" ]; then
     echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[4]${NC} Combined Video ${ORANGE}${id}${NC} already rendered, skipping."
+  #elif [ ]; then
   else
     echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${GREEN}[4]${NC} Baking chat overlay into AlsoMij vod, id: ${ORANGE}${id}${NC}..."
 
@@ -201,6 +201,7 @@ do
         -oAuthPort 4242 \
         -cache ".request.token" \
         -secrets ".client_secrets.json" \
+        -metaJSON "${channels[$current_streamer]}-yt-meta.json"
         -sendFilename true \
         -description "";
     then
@@ -220,17 +221,17 @@ do
   checkTwitchOnce=true
   # oldQueueCount=${#queue[@]}
   while [ ${#queue[@]} -eq 0 -o $checkTwitchOnce = true ]
-  do 
+  do
     checkTwitchOnce=false
-    
+
     # Fetch from Twitch again
 
     # If queue is empty (and looping), then check every 5 minutes
     if [ ${#queue[@]} -eq 0 ]; then
       # TODO: add a spinner
       # TODO: https://unix.stackexchange.com/questions/360198/can-i-overwrite-multiple-lines-of-stdout-at-the-command-line-without-losing-term
-      echo -ne "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[8]${NC} ZZZZ...\033[0K\r"
-      sleep 5m | pv -t 
+      #echo -ne "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[8]${NC} ZZZZ...\033[0K\r"
+      sleep 5m | pv -t
       #echo -ne "$(sleep 5 | pv -F $'%t')\033[0K\r" # -N "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${PURPLE}[8]${NC} ZZZZ...\033[0K\r";
       #echo -ne "\033[0K\r"
       #| tr $'\n' $'\033[0K\r' #
@@ -241,11 +242,6 @@ do
     update_queue $whilst_run_vod_update_count
 
   done
-
-  # newQueueCount=${#queue[@]}
-  # diff="$(($newQueueCount-$oldQueueCount))"
-
-  # echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[8]${NC} Added ${diff} new vods to the queue\n"
 
   #set +x
 
