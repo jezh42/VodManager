@@ -201,7 +201,7 @@ do
         -oAuthPort 4242 \
         -cache ".request.token" \
         -secrets ".client_secrets.json" \
-        -metaJSON "${channels[$current_streamer]}-yt-meta.json"
+        -metaJSON "${current_streamer}-yt-meta.json" \
         -sendFilename true \
         -description "";
     then
