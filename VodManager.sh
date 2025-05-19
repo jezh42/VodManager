@@ -94,11 +94,9 @@ update_queue () {
 
     # LIVE CHECK
     # If vod is live then dont add to queue
-    # [removed] if streamer is live (id is non-zero)
-    # [removed] `[[ -n "$current_stream_id" ]] &&`
-    # if current stream id is the current vod id = live
+    # if streamer is live (id is non-zero) AND if current stream id is the current vod id = live
     # OR if time between vod_created+duration and current epoch is < 60 = live
-    if [[ "$current_stream_id" == "$vod_stream_id" ]]; then
+    if [[ -n "$current_stream_id" ]] && [[ "$current_stream_id" == "$vod_stream_id" ]]; then
 
       echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0:1]${NC} Vod ${ORANGE}${v}${NC} still live!!! Skipping."
       # Add to queue if it doesn't exist

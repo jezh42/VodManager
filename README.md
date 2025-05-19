@@ -44,6 +44,7 @@ Requires the following programs installed and configured (e.g. auth setup) and i
  - Debugging Support (-d)
  - Logging/tee log natively
  - Log youtube completed video URL
+ - Cleanup, remove chat & combined mp4s after 3 months
 
 ## Bugs
 
