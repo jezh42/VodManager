@@ -13,8 +13,11 @@ temp_location="${vods_location}temp/"
 log_level="Status,Info,Warning,Error" # Verbose
 chat_height=176
 chat_width=400
-first_run_vod_update_count=15
-whilst_run_vod_update_count=10
+
+# Assuming completed vods get deleted after 14 days (VodManagerDeleted)
+# Lower number to account for lack of database implementation (filenames currently)
+first_run_vod_update_count=7
+whilst_run_vod_update_count=7
 
 ORANGE='\033[0;33m'
 RED='\033[0;31m'
@@ -63,17 +66,44 @@ update_queue () {
     # Current stream info, empty if not live
     current_stream=$(twitch api get /streams \
     -q user_id=${channels[$current_streamer]} \
-    -q type=live)
+    -q type=live
+    )
     current_stream_id=$(echo $current_stream | jq -r ".data[].id");
 
     # Stream ID of the current Vod
-    vod_stream_id=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .stream_id");
+    vod_stream_id=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${v}\") | .stream_id");
+    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}vod_stream_id${NC} ${vod_stream_id}"
+    published_at=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${v}\") | .published_at");
+    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}published_at${NC} ${published_at}"
+    created_at=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${v}\") | .created_at");
+    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}created_at${NC} ${created_at}"
+    duration=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${v}\") | .duration");
+    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}duration${NC} ${duration}"
+    created_at_epoch_time=$(date +%s -ud"${created_at}")
+    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}created_at_epoch_time${NC} ${created_at_epoch_time}"
+    duration_seconds=$(echo ${duration} | awk -F'[hms]' '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}duration_seconds${NC} ${duration_seconds}"
+    created_plus_duration=$((created_at_epoch_time + duration_seconds))
+    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}created_plus_duration${NC} ${created_plus_duration}"
+    current_time=$(date -u +'%Y-%m-%d'T'%H:%m:%S'Z'')
+    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}current_time${NC} ${current_time}"
+    current_epoch_time=$(date +%s)
+    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}current_epoch_time${NC} ${current_epoch_time}"
+    current_minus_sumation=$((current_epoch_time - created_plus_duration))
+    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}current_minus_sumation${NC} ${current_minus_sumation}"
 
-    # If vod == live then dont add to queue
-    # if streamer is live (id is non-zero) AND current stream id is the current vod id
-    if [[ -n "$current_stream_id" ]] && [[ "$current_stream_id" == "$vod_stream_id" ]]; then
-      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0]${NC} Vod ${ORANGE}${id}${NC} still live!!! Skipping."
-    # Add to queue if it doesn't exist
+    # LIVE CHECK
+    # If vod is live then dont add to queue
+    # [removed] if streamer is live (id is non-zero)
+    # [removed] `[[ -n "$current_stream_id" ]] &&`
+    # if current stream id is the current vod id = live
+    # OR if time between vod_created+duration and current epoch is < 60 = live
+    if [[ "$current_stream_id" == "$vod_stream_id" ]]; then
+
+      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0:1]${NC} Vod ${ORANGE}${v}${NC} still live!!! Skipping."
+      # Add to queue if it doesn't exist
+    elif [ "$current_minus_sumation" -lt 60 ]; then
+      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0:2]${NC} Vod ${ORANGE}${v}${NC} still live!!! Skipping."
     elif [ ! -f "${vods_location}${v}_combined.mp4" ]; then
       echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[U]${NC} Added ${v}..."
       queue+=($v)
@@ -188,6 +218,8 @@ do
     # Variables from Vod
     # TODO: Confirm this isn't bugged
     title=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .title")
+    #good_chars="A-Za-z0-9_.|-'\":()\[\]\\\/"
+    #title_sanitised=$(echo "${title//[^${good_chars}]/_}")
     created_at=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${id}\") | .created_at")
     created_at_date=$(echo ${created_at} | sed 's/T.*//g')
     combined_title="${id} - ${title:0:67} [${created_at_date}]"
