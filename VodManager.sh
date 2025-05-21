@@ -7,8 +7,8 @@
 #
 
 # Global Vars
-#vods_location='/mnt/zimablade/vods/AlsoMij/'
-vods_location='/mnt/NAS_Drive/VODs/AlsoMij/'
+vods_location='/mnt/zimablade/vods/AlsoMij/'
+#vods_location='/mnt/NAS_Drive/VODs/AlsoMij/'
 temp_location="${vods_location}temp/"
 log_level="Status,Info,Warning,Error" # Verbose
 chat_height=176
@@ -45,6 +45,8 @@ declare -a queue=()
 # Sorted by oldest (smallest) ID first
 # First run is global vod count, others are 5
 update_queue () {
+
+  #set -x TODO:
 
   oldQueueCount=${#queue[@]}
 
@@ -121,6 +123,7 @@ update_queue () {
 
   echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[U]${NC} Added ${diff} new vods to the queue"
 
+  #set +x TODO:
 }
 
 # Get the queue for the first time
@@ -199,14 +202,23 @@ do
     echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${GREEN}[4]${NC} Baking chat overlay into AlsoMij vod, id: ${ORANGE}${id}${NC}..."
 
     # Baking time
+
+    # -threads 4 \
+    # -c:a copy \
+    # -c:v libx264 \
+    # -preset medium \
+
+
     ffmpeg \
      -i ${vods_location}${id}_chat.mp4 \
      -i ${vods_location}${id}_chat_mask.mp4 \
      -i ${vods_location}${id}.mp4 \
      -filter_complex "[0][1]alphamerge[ia];[2][ia]overlay=W-w:0" \
-     -c:a copy \
-     -c:v libx264 \
-     -preset medium \
+     -c:v h264_nvenc \
+     -cq 23 \
+     -c:a aac \
+     -b:a 128k \
+     -preset fast \
      -crf 23 \
      ${vods_location}${id}_combined.mp4
 
@@ -233,7 +245,7 @@ do
         -secrets ".client_secrets.json" \
         -metaJSON "${current_streamer}-yt-meta.json" \
         -sendFilename true \
-        -description "";
+        -description "" 2>> failedUploads.txt;
     then
       echo "[$(date +'%d-%m-%Y %T')] ${id}_combined.mp4 - ${combined_title:0:99}" >> uploadedVods.txt
       echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${GREEN}[6]${NC} ${ORANGE}${id}${NC} uploaded successfully! Yippers!"
@@ -261,7 +273,11 @@ do
       # TODO: add a spinner
       # TODO: https://unix.stackexchange.com/questions/360198/can-i-overwrite-multiple-lines-of-stdout-at-the-command-line-without-losing-term
       #echo -ne "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[8]${NC} ZZZZ...\033[0K\r"
+
       sleep 5m | pv -t
+      #temp dont sleep on 0, just shutdown
+      #shutdown.exe /s /t 0
+
       #echo -ne "$(sleep 5 | pv -F $'%t')\033[0K\r" # -N "${ORANGE}[VodManager] [Q=${#queue[@]}]${NC} ${PURPLE}[8]${NC} ZZZZ...\033[0K\r";
       #echo -ne "\033[0K\r"
       #| tr $'\n' $'\033[0K\r' #
