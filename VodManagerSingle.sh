@@ -1,7 +1,7 @@
 #!/bin/bash
-# VodManager
+# VodManagerSingleRerender
 #
-# Run: ./VodManagerSingle.sh VodId timestamp_start timestamp_end
+# Run: ./VodManagerSingleRerender.sh VodId timestamp_start timestamp_end
 #
 # Make sure to configure the global vars
 #
@@ -54,6 +54,8 @@ done
 shift "$((OPTIND - 1))"
 
 
+echo -ne "${PURPLE}[VodManager]${NC} ${GREEN}[2]${NC} Only renders section from already completed vod"
+
 # Get Values
 echo -ne "${ORANGE}[VodManager]${NC} ${GREEN}[1]${NC} Input VOD ID: "
 read id
@@ -87,8 +89,8 @@ fi
 echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[6]${NC} Cutting the vod from ${ORANGE}${timestamp_start}${NC} to ${ORANGE}${timestamp_end}${NC}"
 
 
-
-final_location=${vods_location}${id}_${game_santised}$( [ ! -z ${part} ] && echo "_${part}")
+final_filename=${id}_${game_santised}$( [ ! -z ${part} ] && echo "_${part}")
+final_location=${vods_location}${final_filename}
 
 timestamp_start_epoch=$(date -d "${timestamp_start}" +%s)
 timestamp_end_epoch=$(date -d "${timestamp_end}" +%s)
@@ -135,10 +137,10 @@ if youtubeuploader \
    -sendFilename true \
    -description "";
 then
-   echo "[$(date +'%d-%m-%Y %T')] ${final_location}.mp4 - ${title:0:99}" >> uploadedVods.txt
+   echo "[$(date +'%d-%m-%Y %T')] ${final_filename}.mp4 - ${title:0:99}" >> uploadedVods.txt
    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[8]${NC} ${ORANGE}${id}${NC} uploaded successfully! Yippers!"
 else
-   echo "[$(date +'%d-%m-%Y %T')] ${final_location}.mp4 - ${title:0:99}" >> failedUploads.txt
+   echo "[$(date +'%d-%m-%Y %T')] ${final_filename}.mp4 - ${title:0:99}" >> failedUploads.txt
    echo -e "${ORANGE}[VodManager]${NC} ${GREEN}[8]${NC} ${ORANGE}${id}${NC} failed to upload. Logging..."
 fi
 

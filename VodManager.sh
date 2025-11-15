@@ -16,12 +16,13 @@ chat_width=400
 
 # Assuming completed vods get deleted after 14 days (VodManagerDeleted)
 # Lower number to account for lack of database implementation (filenames currently)
-first_run_vod_update_count=7
-whilst_run_vod_update_count=7
+first_run_vod_update_count=10
+whilst_run_vod_update_count=10
 
 ORANGE='\033[0;33m'
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
@@ -73,26 +74,28 @@ update_queue () {
     current_stream_id=$(echo $current_stream | jq -r ".data[].id");
 
     # Stream ID of the current Vod
+    #echo -e "${ORANGE}[VodManager]${NC} ${BLUE}${v}${NC} Debug Info:"
     vod_stream_id=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${v}\") | .stream_id");
-    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}vod_stream_id${NC} ${vod_stream_id}"
+    #echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}vod_stream_id${NC} ${vod_stream_id}"
     published_at=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${v}\") | .published_at");
-    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}published_at${NC} ${published_at}"
+    #echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}published_at${NC} ${published_at}"
     created_at=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${v}\") | .created_at");
-    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}created_at${NC} ${created_at}"
+    #echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}created_at${NC} ${created_at}"
     duration=$(echo ${vod_data} | jq -r ".data[] | select(.id == \"${v}\") | .duration");
-    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}duration${NC} ${duration}"
+    #echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}duration${NC} ${duration}"
     created_at_epoch_time=$(date +%s -ud"${created_at}")
-    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}created_at_epoch_time${NC} ${created_at_epoch_time}"
-    duration_seconds=$(echo ${duration} | awk -F'[hms]' '{ print ($1 * 3600) + ($2 * 60) + $3 }')
-    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}duration_seconds${NC} ${duration_seconds}"
+    #echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}created_at_epoch_time${NC} ${created_at_epoch_time}"
+    # Fix for vods less than an hour and less than a minute... kinda shitty but also awk is very epic :D
+    duration_seconds=$(echo ${duration} | awk -F'[hms]' '{ if ($0 ~ /h/) { print ($1 * 3600) + ($2 * 60) + $3 } else if ($0 ~ /m/) { print ($1 * 60) + $2 } else { print $1 } }')
+    #echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}duration_seconds${NC} ${duration_seconds}"
     created_plus_duration=$((created_at_epoch_time + duration_seconds))
-    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}created_plus_duration${NC} ${created_plus_duration}"
+    #echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}created_plus_duration${NC} ${created_plus_duration}"
     current_time=$(date -u +'%Y-%m-%d'T'%H:%m:%S'Z'')
-    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}current_time${NC} ${current_time}"
+    #echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}current_time${NC} ${current_time}"
     current_epoch_time=$(date +%s)
-    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}current_epoch_time${NC} ${current_epoch_time}"
+    #echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}current_epoch_time${NC} ${current_epoch_time}"
     current_minus_sumation=$((current_epoch_time - created_plus_duration))
-    echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}current_minus_sumation${NC} ${current_minus_sumation}"
+    #echo -e "${ORANGE}[VodManager] ${NC} ${PURPLE}current_minus_sumation${NC} ${current_minus_sumation}"
 
     # LIVE CHECK
     # If vod is live then dont add to queue
@@ -104,10 +107,24 @@ update_queue () {
       # Add to queue if it doesn't exist
     elif [ "$current_minus_sumation" -lt 60 ]; then
       echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0:2]${NC} Vod ${ORANGE}${v}${NC} still live!!! Skipping."
+      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0:2]${NC} created_at = ${created_at}"
+      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0:2]${NC} created_at_epoch_time = ${created_at_epoch_time}"
+      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0:2]${NC} duration = ${duration}"
+      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0:2]${NC} duration_seconds = ${duration_seconds}"
+      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0:2]${NC} created_plus_duration = ${created_plus_duration}"
+      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0:2]${NC} current_time = ${current_time}"
+      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0:2]${NC} current_epoch_time = ${current_epoch_time}"
+      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${RED}[0:2]${NC} current_minus_sumation = ${current_minus_sumation}"
     elif [ ! -f "${vods_location}${v}_combined.mp4" ]; then
-      echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[U]${NC} Added ${v}..."
-      queue+=($v)
-      queue_count=${#queue[@]}
+      # Only add if not in queue or if empty
+      # TODO: fix
+      if [[ ${#my_queue[@]} -eq 0 || !${queue[@]} =~ $v ]]; then
+        echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[U]${NC} Added ${v}..."
+        queue+=($v)
+        queue_count=${#queue[@]}
+      else
+        echo -e "${ORANGE}[VodManager] [Q=$queue_count]${NC} ${PURPLE}[U]${NC} ${v} already in queue, not adding"
+      fi
     fi
 
   done
@@ -129,8 +146,8 @@ update_queue () {
 # Get the queue for the first time
 update_queue $first_run_vod_update_count
 
-# Loop through the queue, indefinitely
-while true
+# Loop through the queue,
+while [ ${#queue[@]} -ne 0 ]
 do
 
   #set -x

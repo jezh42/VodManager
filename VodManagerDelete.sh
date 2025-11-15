@@ -9,8 +9,8 @@
 
 # Global Vars
 shopt -s extglob
-vods_location='/mnt/NAS_Drive/VODs/AlsoMij/'
-deletion_days=14
+vods_location='/mnt/zimablade/vods/AlsoMij/'
+deletion_days=20
 
 ORANGE='\033[0;33m'
 RED='\033[0;31m'
@@ -49,14 +49,14 @@ while getopts dv o; do
   esac
 done
 shift "$((OPTIND - 1))"
-
+echo -e "${ORANGE}[VodManager]${NC} Calculating size before..."
 size_before=$(du -hs ${vods_location} | cut -f1)
 size_before_bytes=$(du -hbs ${vods_location} | cut -f1)
-#echo -e "${ORANGE}[VodManager]${NC} File size before: ${size_before}"
-#echo -e "${ORANGE}[VodManager]${NC} File size before: ${size_before_bytes}"
+echo -e "${ORANGE}[VodManager]${NC} File size before: ${size_before}"
+echo -e "${ORANGE}[VodManager]${NC} File size before: ${size_before_bytes}"
 
 # First Delete the TwitchDownloaderCLI Cache (w/ prompt)
-TwitchDownloaderCLI cache --force-clear --banner false
+TwitchDownloaderCLI cache --force-clear # --banner false
 
 vod_delete=0
 chat_delete=0
@@ -121,6 +121,7 @@ echo -e "${ORANGE}[VodManager]${NC} VODs deleted ${RED}${vod_delete}${NC}"
 echo -e "${ORANGE}[VodManager]${NC} VOD chat renders deleted ${RED}${chat_delete}${NC}"
 echo -e "${ORANGE}[VodManager]${NC} VOD chat masks deleted ${RED}${chat_mask_delete}${NC}"
 
+echo -e "${ORANGE}[VodManager]${NC} Calculating size after..."
 size_after=$(du -hs ${vods_location} | cut -f1)
 size_after_bytes=$(du -hbs ${vods_location} | cut -f1)
 echo -e "${ORANGE}[VodManager]${NC} File size before: ${PURPLE}${size_before}${NC}"
